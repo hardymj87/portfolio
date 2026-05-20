@@ -21,7 +21,7 @@
     <div class="lts y"></div>
     <div class="lts g"></div>
     </div>
-    <h2 class="l-m0">Demo Search & Edit</h2>
+    <h2 class="l-m0">NSD Weekly Submission Search</h2>
  </div>
  <main id="weeklySection" class="main-section l-m0-auto">
    <section>
@@ -56,19 +56,29 @@
                         </span>
                       </div>
                             <div class="filter-btns">
-                             <button type="button" id="filterClearBtn" class="btn t-sm-13 t-w600">Clear All</button>
-                             <button type="button" id="searchBtn"  class="btn t-sm-13 t-w600">Search All</button>
+                             <button type="button" id="filterClearBtn" class="btn t-sm-13 t-w600">Reset</button>
+                                                          
                             </div>
                     </div>          
             </div>
       </div>
 
-      <section>
-          <div id="results" class="results">
-              <div id="resultsActions" class="results-actions"></div>
-              <div class="tview is-showing" data-view="table" id="resultsTableHost"></div>
-          </div>
-      </section>
+
+<section>
+  <div id="results" class="results">
+
+      <div id="resultsButtons" class="results-buttons">
+        <button type="button" id="searchAllBtn" class="btn t-sm-13 t-w600">Search All</button>
+        <button type="button" id="exportSelectedBtn" class="btn t-sm-13 t-w600" disabled>Export Selected</button>
+      </div>
+
+      <div id="resultsActions" class="results-actions"></div>
+    <div class="tview is-showing" data-view="table" id="resultsTableHost"></div>
+    <div id="resultsActionsBottom" class="results-actions-bottom"></div>
+
+  </div>
+</section>
+
 
 
       <div id="pageBlocker" class="page-blocker hidden"></div>
@@ -108,7 +118,7 @@
                 </div>
 
                 <div class="edit-wrapper">
-                  <textarea id="edit-summary" class="edit-summary" spellcheck="true"></textarea>
+                  <textarea id="edit-summary" class="edit-summary" spellcheck="false" autocomplete="off"></textarea>
                   <button type="button" class="edit-restore-btn" data-target="summary">Restore Original Summary</button>
                   <div class="edit-restore-confirm" hidden>
                     <div class="edit-restore-confirm-inner">
@@ -139,7 +149,7 @@
                   </div>             
                 </div>
                   <div class="edit-wrapper">
-                  <textarea id="edit-status" class="edit-status" spellcheck="true"></textarea>
+                  <textarea id="edit-status" class="edit-status" spellcheck="false" autocomplete="off"></textarea>
                   <button type="button" class="edit-restore-btn" data-target="status">Restore Original Status</button>
                   <div class="edit-restore-confirm" hidden>
                     <div class="edit-restore-confirm-inner">
@@ -209,6 +219,21 @@
           </div>
         </div>
       </template>
+
+      <div id="exportOverlay" class="export-overlay hidden">
+  <div class="overlay-content">
+    <h2>Export Selected Entries</h2>
+
+    <label for="overlayDocClass">Document Classification</label>
+<select id="overlayDocClass"></select>
+
+    <div class="overlay-actions">
+      <button id="overlayCancel" type="submit">Cancel</button>
+      <button id="overlayExport" type="submit">Export PDF</button>
+    </div>
+  </div>
+</div>
+
 
     </section>
   </main>
