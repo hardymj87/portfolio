@@ -196,3 +196,30 @@ body {
     color: #444;
 }
 
+.design-system-layout {
+    display: flex;
+    gap: 2rem;
+}
+
+.ds-nav {
+    position: sticky;
+    top: 100px;
+    align-self: flex-start;
+    width: 200px;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid #e1e1e1;
+    border-radius: 8px;
+}
+
+.ds-nav a {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: #444;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.ds-nav a:hover {
+    color: #0078d4;
+}
