@@ -1,1 +1,228 @@
+<head>
+<title>Search Review</title>
 
+<link rel="stylesheet" href="ui.css">
+<link rel="stylesheet" href="search.css">
+<style>.spell-error {
+  border: 2px solid #c41230; /* your red */
+}</style>
+
+</head>
+<body>
+<div>
+
+ <div class="title-bar l-gap-16 l-flex-row">
+    <div class="l-gap-8 l-flex-row l-m20">
+    <div class="lts r"></div>
+    <div class="lts y"></div>
+    <div class="lts g"></div>
+    </div>
+    <h2 class="l-m0">NSD Weekly Submission Search</h2>
+ </div>
+ <main id="weeklySection" class="main-section l-m0-auto">
+   <section>
+
+      <div class="search-panel">
+        <p>
+          Use the <b>search box</b> and/or filters to find an entry,
+          then click a row to open the detail card.
+        </p>
+            <div class="l-flex-col l-gap-30">              
+              <input type="search" class="searchbox" id="searchBox" placeholder="Search by title, CCN, summary, status" aria-describedby="searchHelp" aria-controls="searchPreview" aria-expanded="false"/>
+      
+            
+                    <div class="l-flex-row l-gap-40">
+                      <div id="filters" class="l-flex l-gap-10" aria-labelledby="filters-label">
+                        <label id="filters-label" class="l-gap-10" for="filters">Filter by</label>
+
+                        <span class="select-wrap">
+                          <select id="filterCreatedDate"><option value="">All Dates</option></select>
+                        </span>
+                        <span class="select-wrap">
+                          <select id="filterCaseCategory"><option value="">All Categories</option></select>
+                        </span>
+                        <span class="select-wrap">
+                          <select id="filterCreatedBy"><option value="">All Creators</option></select>
+                        </span>
+                        <span class="select-wrap">
+                          <select id="filterTitle"><option value="">All Titles</option></select>
+                        </span>
+                        <span class="select-wrap">
+                          <select id="filterCCN"><option value="">All CCNs</option></select>
+                        </span>
+                      </div>
+                            <div class="filter-btns">
+                             <button type="button" id="filterClearBtn" class="btn t-sm-13 t-w600">Clear All</button>
+                             <button type="button" id="searchBtn"  class="btn t-sm-13 t-w600">Search All</button>
+                            </div>
+                    </div>          
+            </div>
+      </div>
+
+      <section>
+          <div id="results" class="results">
+              <div id="resultsActions" class="results-actions"></div>
+              <div class="tview is-showing" data-view="table" id="resultsTableHost"></div>
+          </div>
+      </section>
+
+
+      <div id="pageBlocker" class="page-blocker hidden"></div>
+      <div id="entryOverlay" class="entry-overlay entry-overlay--hidden entry-overlay--closing" >
+      <div class="entry-panel  l-flex-col" role="dialog" aria-modal="true" aria-label="Weekly details">
+        <button type="button" class="panel-close btn" aria-label="Close details">Close X</button>
+      <div id="entryCardSlot" class="entry-panel-body l-flex-col">
+      </div>
+      </div>
+      </div>
+
+      <template id="entryTemplate">
+        <div class="entry l-flex-col l-gap-8 l-m-hgt-0 l-pdg-8">
+
+          <div class="l-flex-col l-gap-12">
+            <div class="entry-title l-flex-wrap l-gap-10">
+              <h3 class="entry-title__text l-m0 t-w700"></h3>
+              <div class="entry-title__info"></div>
+            </div>        
+              <div class="entry-meta t-lg-16"></div>            
+          </div>
+
+          <div class="entry-edit  l-flex-col" >
+            <section class="edit-section">
+              <!-- SUMMARY COLUMN -->
+              <div class="edit-column" data-edit-section="summary">    
+
+                <h3 class="l-m0">Update Summary</h3>            
+
+
+                <div class="inline-tags-block">      
+                  <div class="prefix-bar">
+                    <button type="button" class="prefix-btn" data-prefix="S"  title="Standard">S</button>
+                    <button type="button" class="prefix-btn" data-prefix="SF" title="Significant Finding">SF</button>
+                    <button type="button" class="prefix-btn" data-prefix="S/N" title="System/Network">S/N</button>
+                  </div>                         
+                </div>
+
+                <div class="edit-wrapper">
+                  <textarea id="edit-summary" class="edit-summary" spellcheck="true"></textarea>
+                  <button type="button" class="edit-restore-btn" data-target="summary">Restore Original Summary</button>
+                  <div class="edit-restore-confirm" hidden>
+                    <div class="edit-restore-confirm-inner">
+                      <span class="edit-restore-message">Are you sure you want to restore the original summary? This will overwrite your current changes</span>
+                      <div class="edit-restore-actions">
+                        <button type="button" class="edit-restore-confirm-yes" data-target="summary">Yes</button>
+                        <button type="button" class="edit-restore-confirm-no" data-target="summary">No</button>
+                      </div>
+                    </div>                         
+                  </div>            
+                </div>
+                <div class="edit-footer">
+                  <span class="edit-count sm-count-summary" aria-live="polite"></span>
+                  
+                </div>
+              </div>
+
+              <!-- STATUS COLUMN -->
+              <div class="edit-column" data-edit-section="status">  
+                <div class="edit-update__title">
+                <h3 class="l-m0">Update Status</h3>
+                </div>
+                <div class="inline-tags-block">  
+                  <div class="prefix-bar">
+                  <button type="button" class="prefix-btn" data-prefix="S" title="Standard">S</button>
+                  <button type="button" class="prefix-btn" data-prefix="SF" title="Significant Finding">SF</button>
+                  <button type="button" class="prefix-btn" data-prefix="S/N" title="System/Network">S/N</button>
+                  </div>             
+                </div>
+                  <div class="edit-wrapper">
+                  <textarea id="edit-status" class="edit-status" spellcheck="true"></textarea>
+                  <button type="button" class="edit-restore-btn" data-target="status">Restore Original Status</button>
+                  <div class="edit-restore-confirm" hidden>
+                    <div class="edit-restore-confirm-inner">
+                      <span class="edit-restore-message">Are you sure you want to restore the original status? This will overwrite your current changes</span>
+                      <div class="edit-restore-actions">
+                        <button type="button" class="edit-restore-confirm-yes" data-target="status">Yes</button>
+                        <button type="button" class="edit-restore-confirm-no" data-target="status">No</button>
+                      </div>
+                    </div>                         
+                  </div>            
+                </div>
+                <span class="edit-count sm-count-status" aria-live="polite"></span>
+              </div>
+            </section>
+
+            <!-- SUMMARY HISTORY -->
+            <section class="history-block">
+
+            <!-- SUMMARY HISTORY COLUMN -->
+            <div class="history-column history-column--summary">
+      
+                <h3 class="l-m0">History - Select a summary date below to view its contents</h3>
+                
+
+                <div class="history-layout">
+                  <div class="histGroup" data-group="summary-inline">
+                    <button class="histItem" type="button" data-template style="display:none;">
+                      <div class="histHeader">
+                        <span class="histDate"></span>
+                        <span class="histAuthor"></span>
+                        <span class="histPreview"></span>
+                      </div>          
+                    </button>
+                    </div>
+
+                  <div class="history-detail" data-history-detail="summary">
+                    <div class="history-detail__body"></div>
+                  </div>
+                </div>
+              </div>
+
+            <!-- STATUS HISTORY COLUMN -->
+            <div class="history-column history-column--status">
+                <div class="history-block_hdr">
+                <h3 class="">Status History - Select a status date below to view its contents</h3>
+                </div>
+                <div class="history-layout">
+                  <div class="histGroup" data-group="status-inline">
+                    <button class="histItem" type="button" data-template style="display:none;">
+                        <div class="histHeader">
+                        <span class="histDate"></span>
+                        <span class="histAuthor"></span>
+                        <span class="histPreview"></span>
+                        </div>         
+                      </button>
+                  </div>
+                  <div class="history-detail" data-history-detail="status">
+                    <div class="history-detail__body"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+                                  <div class="edit-actions">
+                <button type="button" id="btn-save" class="btn">Save changes</button>
+                <button type="button" id="btn-cancel" class="btn">Cancel</button>
+              </div>  
+          </div>
+        </div>
+      </template>
+
+    </section>
+  </main>
+</div>
+
+
+
+
+<script src="newentry-demo.js" defer></script>
+
+
+<script>
+
+
+
+</script>
+
+
+
+</body>
+</html>
