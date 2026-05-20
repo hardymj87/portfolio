@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michaele Hardy – SharePoint Developer Portfolio</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<header class="site-header">
+    <div class="container">
+        <h1 class="logo">Michaele Hardy</h1>
+        <nav class="nav">
+            <a href="index.html">Home</a>
+            <a href="case-studies/new-entry.html">Case Studies</a>
+            <a href="ui-gallery/components.html">UI Gallery</a>
+            <a href="design-system/index.html">Design System</a>
+        </nav>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="container">
+        <h2>SharePoint Developer specializing in modern UI/UX and workflow transformation</h2>
+        <p>I design clean, intuitive, user-centered SharePoint experiences that improve adoption, streamline processes, and bring clarity to complex enterprise environments.</p>
+    </div>
+</section>
+
+<section class="features container">
+    <div class="feature-card">
+        <h3>New Entry Workflow</h3>
+        <p>A modern, guided interface for creating structured entries with live preview, prefix logic, and validation.</p>
+        <a class="btn" href="case-studies/new-entry.html">View Case Study</a>
+    </div>
+
+    <div class="feature-card">
+        <h3>Search & Edit Interface</h3>
+        <p>A fast, filter-driven search experience with instant results, edit history, and modern UI patterns.</p>
+        <a class="btn" href="case-studies/search-edit.html">View Case Study</a>
+    </div>
+
+    <div class="feature-card">
+        <h3>UI Component Library</h3>
+        <p>A collection of reusable UI patterns including cards, panels, buttons, dropdowns, and form elements.</p>
+        <a class="btn" href="ui-gallery/components.html">Explore Components</a>
+    </div>
+
+    <div class="feature-card">
+        <h3>Design System</h3>
+        <p>Spacing, colors, typography, and interaction rules that create a consistent, modern SharePoint experience.</p>
+        <a class="btn" href="design-system/index.html">View Design System</a>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="container">
+        <p>© 2026 Michaele Hardy — SharePoint Developer</p>
+    </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
