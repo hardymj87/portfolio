@@ -18,6 +18,7 @@
             <a href="search-edit.html" class="active">Search/Edit</a>
             <a href="../ui-gallery/components.html">UI Gallery</a>
             <a href="../design-system/index.html">Design System</a>
+        <button id="themeToggle" class="theme-toggle">🌙</button>
         </nav>
     </div>
 </header>
@@ -95,6 +96,7 @@
         <p>© 2026 Michaele Hardy — SharePoint Developer</p>
     </div>
 </footer>
+<script src="js/main.js?" defer></script>
 
 </body>
 </html>
