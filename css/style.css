@@ -121,4 +121,78 @@ body {
     margin-bottom: 0.5rem;
 }
 
+/* DESIGN SYSTEM */
+
+.design-system h3 {
+    margin-top: 2.5rem;
+}
+
+/* Spacing scale */
+.spacing-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.spacing-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.box {
+    display: inline-block;
+    background: #0078d4;
+    border-radius: 4px;
+}
+
+.s4 { width: 4px; height: 4px; }
+.s8 { width: 8px; height: 8px; }
+.s12 { width: 12px; height: 12px; }
+.s16 { width: 16px; height: 16px; }
+.s20 { width: 20px; height: 20px; }
+.s24 { width: 24px; height: 24px; }
+.s32 { width: 32px; height: 32px; }
+
+/* Color palette */
+.color-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.color-swatch {
+    text-align: center;
+}
+
+.swatch {
+    display: block;
+    width: 80px;
+    height: 50px;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    border: 1px solid #ccc;
+}
+
+.neutral-100 { background: #ffffff; }
+.neutral-200 { background: #f5f6f8; }
+.neutral-300 { background: #e1e1e1; }
+.neutral-600 { background: #444444; }
+.accent { background: #0078d4; }
+
+/* Typography */
+.type-scale {
+    margin: 2rem 0;
+}
+
+.type-item {
+    margin-bottom: 1.5rem;
+}
+
+.body-text {
+    font-size: 1rem;
+    color: #444;
+}
 
