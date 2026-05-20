@@ -109,3 +109,16 @@ body {
     font-size: 0.9rem;
 }
 
+.ui-library h3 {
+    margin-top: 2.5rem;
+}
+
+.component-block {
+    margin: 1.5rem 0 2.5rem;
+}
+
+.component-block h4 {
+    margin-bottom: 0.5rem;
+}
+
+
