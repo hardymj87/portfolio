@@ -1,8 +1,12 @@
-console.log("Portfolio site loaded.");
-const toggle = document.getElementById("themeToggle");
+document.addEventListener("DOMContentLoaded", () => {
+    const toggle = document.getElementById("themeToggle");
 
-toggle.addEventListener("click", () => {
-    document.body.classList.toggle("dark");
+    if (toggle) {
+        toggle.addEventListener("click", () => {
+            document.body.classList.toggle("dark");
+        });
+    }
 });
+
 
 
