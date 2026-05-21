@@ -1,1 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entry Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar__top">
+        <h2>Entries</h2>
+        <button id="btnNewEntry" type="button">+ New</button>
+      </div>
 
+      <div id="entriesList" class="entries-list"></div>
+
+      <div class="sidebar__actions">
+        <button id="btnDuplicateEntry" type="button">Duplicate</button>
+        <button id="btnDeleteEntry" type="button">Delete</button>
+        <button id="btnShowAll" type="button" class="is-disabled" disabled>Show All</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="editor-card new-entry">
+        <div class="grid">
+          <div class="field">
+            <label for="fieldoffice">Field Office</label>
+            <select id="fieldoffice">
+              <option value="">Select Field Office</option>
+            </select>
+          </div>
+
+          <div class="field" id="suboffice-field">
+            <label for="suboffice">Sub Office</label>
+            <select id="suboffice">
+              <option value="">Select SubOffice</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="ccn">CCN</label>
+            <input id="ccn" type="text" />
+          </div>
+
+          <div class="field">
+            <label>Title Classification</label>
+            <div class="class-select">
+              <select id="titleClassDropdown"></select>
+              <div class="class-helper">Select classification first</div>
+            </div>
+          </div>
+
+          <div class="field field--full">
+            <label for="title">Title</label>
+            <textarea id="title" rows="2"></textarea>
+          </div>
+
+          <div class="field">
+            <label>Summary Classification</label>
+            <div class="class-select">
+              <select id="summaryClassDropdown"></select>
+              <div class="class-helper">Select classification first</div>
+            </div>
+          </div>
+
+          <div class="field field--full">
+            <label for="summary">Summary</label>
+            <textarea id="summary" rows="5"></textarea>
+          </div>
+
+          <div class="field">
+            <label>Status Classification</label>
+            <div class="class-select">
+              <select id="statusClassDropdown"></select>
+              <div class="class-helper">Select classification first</div>
+            </div>
+          </div>
+
+          <div class="field field--full">
+            <label for="status">Status</label>
+            <textarea id="status" rows="4"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section id="reviewCard" class="review-card">
+        <h3>Review</h3>
+        <div class="review-grid">
+          <div><strong>CCN:</strong> <span id="r-ccn">— not set —</span></div>
+          <div><strong>Title:</strong> <span id="r-title">— not set —</span></div>
+          <div><strong>Field Office:</strong> <span id="r-fieldoffice">— not set —</span></div>
+          <div><strong>Sub Office:</strong> <span id="r-suboffice">— not set —</span></div>
+          <div><strong>Summary:</strong> <span id="r-summary">— not set —</span></div>
+          <div><strong>Status:</strong> <span id="r-status">— not set —</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
