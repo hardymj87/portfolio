@@ -837,7 +837,7 @@
               <button class="gc-delete" data-id="${en.id}" type="button">🗑 Delete</button>
             </div>
             <div class="entry-grid">
-              <div class="label">CCN</div>
+              <div class="label">Category</div>
               <div class="value">${escapeHTML(d.ccn || '—')}</div>
 
               <div class="label">Field Office</div>
