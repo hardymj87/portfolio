@@ -1220,3 +1220,111 @@ cursor: pointer;
 .edit-count.is-overlimit{
   color: var(--Sec-Red-2);
 }
+
+.export-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.export-overlay.hidden { display: none; }
+
+.overlay-content {
+  background: white;
+  padding: 24px;
+  border-radius: 6px;
+  width: 400px;
+}
+
+.results-actions-bottom {
+  margin-top: 14px;        
+  opacity: 0.75;                
+  font-size: 0.9em; 
+}
+
+.results-actions-row{
+   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.results-pager {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.results-buttons{
+  display: flex;
+  justify-content:center;
+}
+
+.export-btn{
+  font-weight: 500;
+    margin: 0;
+    padding: 8px;
+    min-width: 55px;
+}
+#exportSelectedBtn[disabled] {
+  cursor: not-allowed;
+  color:#f3f3f3;
+}
+
+#exportSelectedBtn[disabled]:hover::after {
+  content: "Select one or more rows to enable export";
+  position: absolute;
+  background: #333;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateY(-150%);
+}
+
+.search-helper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap; /* prevents overflow on smaller screens */
+  font-size: 16px;
+    color: var(--Pri-Blue-1);
+    border-radius: 10px;
+    text-align: center;
+    margin: 0px 0px 30px 0px;
+    justify-content: center;
+}
+
+.search-helper button {
+  margin: 0;
+  font-size: 0.7rem;
+  box-shadow: inset 0 2px 12px var(--Pri-Blue-2);
+  background: #eff7fd;
+  font-weight:600;
+}
+
+.filter-row{
+  display: flex;
+    flex-direction: row;
+    gap:2.5rem;
+}
+
+.filterclear{
+    margin: 0;
+    font-size: 0.7rem;
+    box-shadow: inset 0 1px 10px var(--Pri-Blue-2);
+    background: #eff7fd;
+}
+
+.filterclear:hover,
+.search-helper button:hover{
+  background:#e6f2fa;
+  padding:9px 18px;
+  box-shadow: inset 0 3px 14px var(--Pri-Blue-2), 0 2px 6px rgba(0,0,0,0.12);
+  transform: translateY(-1px) scale(1.02);
+}
