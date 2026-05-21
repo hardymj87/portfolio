@@ -1,139 +1,737 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const STORAGE_KEY = 'searchEditDemo:weeklyItems:v2';
-  const MAX = 700;
-  const $ = (s, root=document) => root.querySelector(s);
-  const $$ = (s, root=document) => Array.from(root.querySelectorAll(s));
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const norm = v => String(v ?? '').trim().toLowerCase();
-  const dateKey = v => { const d = new Date(v); return isNaN(d) ? String(v||'').slice(0,10) : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
-  const dateLabelFromKey = k => { if(!k) return ''; const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString(); };
-  const daysAgo = n => new Date(Date.now() - n*86400000).toISOString();
+  const searchBox = document.getElementById('searchBox');
+  const filterClearBtn = document.getElementById('filterClearBtn');
+  const gridEl = document.getElementById('weeklySection');
 
-  let pageSize = 10, currentPage = 1, tableSort = { key:'createdAt', dir:'desc' }, CURRENT_OPEN_ID = null;
-  const caches = { initialItems: [], currentResults: [] };
-  const searchBox = $('#searchBox'), host = $('#resultsTableHost'), actionsTop = $('#resultsActions'), actionsBottom = $('#resultsActionsBottom');
+  let pageSize = 10;
+  let currentPage = 1;
+  let tableSort = { key: "createdAt", dir: "desc" };
+  let CURRENT_OPEN_ID = null;
 
-  function demoItems(){ return [
-    item('101','Weekly Operations Update','CCN-1001','Heading1','Demo User',1,'(S) Demo summary for weekly operations. This is stored only in your browser localStorage.','(SF) Status was updated during the demo build.'),
-    item('102','Case Review Notes','CCN-1002','Heading2','Demo Reviewer',3,'(S/N) Network-related case notes for demo searching and filtering.','(S) Pending review. This can be edited and saved locally.'),
-    item('103','Training Item','CCN-1003','Heading3','Demo User',7,'(SF) Significant finding example text with a typo: operatonal.','(S) Complete with typo: recieve.'),
-    item('104','Export Example','CCN-1004','Heading1','Demo Analyst',10,'(S) Select this row and use Export Selected to download a Word-friendly file.','(S) Waiting on final review.')
-  ];}
-  function item(id,title,ccn,cat,by,ago,summary,status){
-    const iso = daysAgo(ago);
-    return { id,title,ccn,casecategory:cat,createdBy:by,editedBy:by,createdAt:dateKey(iso),createdIso:iso,modifiedIso:iso,summary,status,summaryUpdated:iso,statusUpdated:iso,DocClass:'UNCLASSIFIED',
-      summaryHistory: ago < 5 ? [{date:daysAgo(ago+4),editor:by,text:'(S) Older summary text for history preview.'}] : [],
-      statusHistory: ago < 5 ? [{date:daysAgo(ago+3),editor:by,text:'(S/N) Older status text for history preview.'}] : [] };
-  }
-  function load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) return JSON.parse(raw)||[]; }catch{} const x=demoItems(); saveAll(x); return x; }
-  function saveAll(items){ localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
-  function updateItem(updated){ const items=load(); const i=items.findIndex(x=>String(x.id)===String(updated.id)); if(i>-1) items[i]=updated; saveAll(items); caches.initialItems=items; caches.currentResults = caches.currentResults.map(x=>String(x.id)===String(updated.id)?updated:x); }
+  const caches = {
+    initialItems: [],
+    currentResults: []
+  };
 
-  // ---------- Custom spellcheck ----------
-  const COMMON_WORDS = new Set((`a able about above across action active add after again against all also an and any application are as at author based be because been before being below between both browser build by can case category change check choice click close code column complete content created current data date demo detail does download during edit edited entry every export field file filter final find finding for from function group has have heading history if in inline input into is item it its just keep label layout list local locally make max modified more network new no not notes of off on only open option or original other page pending prefix preview review row save saved search section select selected status still stored summary system table text the this title to typing update updated use user value view weekly when will with word work wrapper your`).split(/\s+/));
-  const DOMAIN_WORDS = new Set(['ccn','fo','do','docclass','nsd','sharepoint','localstorage','s/n','sf','rest','odata','fieldoffice','casecategory','summhistory','statushistory']);
-  const MISSPELLINGS = { recieve:'receive', seperate:'separate', occured:'occurred', teh:'the', adn:'and', wierd:'weird', definately:'definitely', operatonal:'operational', acheive:'achieve', adress:'address', accomodate:'accommodate', enviroment:'environment', goverment:'government', sucess:'success', neccessary:'necessary' };
-  function cleanWord(word){ return String(word||'').toLowerCase().replace(/^\([^)]*\)\s*/, '').replace(/[^a-z0-9\/'-]/g,'').replace(/^['-]+|['-]+$/g,''); }
-  function checkSpelling(text){
-    const seen = new Set();
-    return String(text||'').split(/\s+/).map(cleanWord).filter(w => {
-      if(!w || w.length < 3 || seen.has(w)) return false; seen.add(w);
-      if(/^ccn[-\d]*$/i.test(w) || /^\d+$/.test(w)) return false;
-      return MISSPELLINGS[w] || (!COMMON_WORDS.has(w) && !DOMAIN_WORDS.has(w));
-    }).map(w => ({ word:w, suggestion: MISSPELLINGS[w] || '' }));
-  }
-  function ensureSpellPanel(textarea){
-    const wrap = textarea.closest('.edit-wrapper') || textarea.parentElement;
-    let panel = wrap?.querySelector('.custom-spellcheck');
-    if(!panel && wrap){ panel=document.createElement('div'); panel.className='custom-spellcheck'; wrap.appendChild(panel); }
-    return panel;
-  }
-  function runSpellcheck(textarea){
-    const panel = ensureSpellPanel(textarea); if(!panel) return;
-    const problems = checkSpelling(textarea.value);
-    textarea.classList.toggle('has-custom-spell-errors', problems.length>0);
-    if(!problems.length){ panel.hidden=true; panel.innerHTML=''; return; }
-    panel.hidden=false;
-    panel.innerHTML = `<strong>Check spelling:</strong> ${problems.slice(0,8).map(p => `<button type="button" class="spell-pill" data-word="${esc(p.word)}" data-suggestion="${esc(p.suggestion)}">${esc(p.word)}${p.suggestion ? ` → ${esc(p.suggestion)}` : ''}</button>`).join(' ')}`;
-    panel.querySelectorAll('.spell-pill').forEach(btn=>btn.addEventListener('click',()=>{
-      const sug=btn.dataset.suggestion, word=btn.dataset.word; if(!sug) return;
-      textarea.value = textarea.value.replace(new RegExp(`\\b${word}\\b`, 'gi'), sug);
-      textarea.dispatchEvent(new Event('input',{bubbles:true}));
-      runSpellcheck(textarea);
+  const DOC_CLASS_CHOICES = [
+    "UNCLASSIFIED",
+    "CONFIDENTIAL",
+    "SECRET",
+    "TOP SECRET"
+  ];
+
+  function seedHistory(texts, editor, baseDate) {
+    return texts.map((text, i) => ({
+      text,
+      editor,
+      date: new Date(baseDate.getTime() - i * 86400000).toISOString()
     }));
   }
 
-  function enhanceSelects(){
-    $$('#filters select').forEach(sel => {
-      if(sel.previousElementSibling?.classList?.contains('ui-select')) return;
-      sel.style.cssText = 'position:absolute;opacity:0;pointer-events:none;width:0;height:0';
-      const wrap = document.createElement('div'); wrap.className='ui-select';
-      wrap.innerHTML = `<button type="button" class="ui-select__btn" role="combobox" aria-expanded="false"></button><div class="ui-select__list" role="listbox"></div>`;
-      sel.parentElement.insertBefore(wrap, sel);
-      $('.ui-select__btn',wrap).onclick = () => { const open=wrap.classList.toggle('is-open'); $('.ui-select__btn',wrap).setAttribute('aria-expanded',String(open)); };
-      document.addEventListener('click', e => { if(!wrap.contains(e.target)) wrap.classList.remove('is-open'); });
+  function makeMockData() {
+    const now = new Date();
+    return [
+      {
+        id: "1",
+        title: "Suspicious login cluster",
+        ccn: "1001",
+        casecategory: "Cyber",
+        summary: "Multiple suspicious login attempts were detected across externally facing accounts.",
+        status: "Initial review complete. Awaiting follow-up from operations.",
+        createdAt: "2026-05-18",
+        createdIso: "2026-05-18T10:20:00Z",
+        modifiedIso: "2026-05-20T15:45:00Z",
+        createdBy: "Alex Carter",
+        editedBy: "Jordan Lee",
+        DocClass: "",
+        summaryUpdated: "2026-05-20T15:45:00Z",
+        statusUpdated: "2026-05-20T15:45:00Z",
+        summaryHistory: seedHistory([
+          "Original intake noted suspicious foreign-source sign-in activity.",
+          "Expanded summary to include scope and affected systems."
+        ], "Jordan Lee", now),
+        statusHistory: seedHistory([
+          "Status opened and routed to analyst queue.",
+          "Status updated after triage."
+        ], "Jordan Lee", now)
+      },
+      {
+        id: "2",
+        title: "Facility badge audit gap",
+        ccn: "1002",
+        casecategory: "Physical Security",
+        summary: "Badge audit identified several inactive accounts that retained facility access.",
+        status: "Facilities team notified; remediation in progress.",
+        createdAt: "2026-05-17",
+        createdIso: "2026-05-17T08:00:00Z",
+        modifiedIso: "2026-05-19T12:00:00Z",
+        createdBy: "Taylor Morgan",
+        editedBy: "Taylor Morgan",
+        DocClass: "",
+        summaryUpdated: "2026-05-19T12:00:00Z",
+        statusUpdated: "2026-05-19T12:00:00Z",
+        summaryHistory: seedHistory(["Initial draft summary entered."], "Taylor Morgan", now),
+        statusHistory: seedHistory(["Opened pending badge reconciliation."], "Taylor Morgan", now)
+      },
+      {
+        id: "3",
+        title: "Data handling deviation",
+        ccn: "1003",
+        casecategory: "Compliance",
+        summary: "Improper handling of restricted reporting material was identified during internal review.",
+        status: "Compliance counsel engaged for disposition guidance.",
+        createdAt: "2026-05-15",
+        createdIso: "2026-05-15T14:30:00Z",
+        modifiedIso: "2026-05-21T09:15:00Z",
+        createdBy: "Jordan Lee",
+        editedBy: "Alex Carter",
+        DocClass: "",
+        summaryUpdated: "2026-05-21T09:15:00Z",
+        statusUpdated: "2026-05-21T09:15:00Z",
+        summaryHistory: seedHistory([
+          "Original review flagged a possible handling issue.",
+          "Updated summary with document chain details."
+        ], "Alex Carter", now),
+        statusHistory: seedHistory([
+          "Initial status logged.",
+          "Escalated to compliance review."
+        ], "Alex Carter", now)
+      },
+      {
+        id: "4",
+        title: "Network monitoring exception",
+        ccn: "1004",
+        casecategory: "System/Network",
+        summary: "Temporary gap in network telemetry affected visibility for one monitored enclave.",
+        status: "Visibility restored. Final corrective action pending.",
+        createdAt: "2026-05-14",
+        createdIso: "2026-05-14T11:00:00Z",
+        modifiedIso: "2026-05-16T17:10:00Z",
+        createdBy: "Chris Bennett",
+        editedBy: "Chris Bennett",
+        DocClass: "",
+        summaryUpdated: "2026-05-16T17:10:00Z",
+        statusUpdated: "2026-05-16T17:10:00Z",
+        summaryHistory: [],
+        statusHistory: []
+      }
+    ];
+  }
+
+  caches.initialItems = makeMockData();
+  caches.currentResults = [];
+
+  function norm(v){ return String(v ?? '').trim().toLowerCase(); }
+  function dateLabelFromKey(k){
+    if (!k) return '';
+    const [y,m,d] = k.split('-').map(Number);
+    return new Date(y, m-1, d).toLocaleDateString();
+  }
+  function dateKey(v){
+    if (!v) return '';
+    if (/^\\d{4}-\\d{2}-\\d{2}$/.test(v)) return v;
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function localKeywordMatch(item, termRaw) {
+    const t = String(termRaw || "").trim().toLowerCase();
+    if (!t) return true;
+    const fields = [
+      item.title, item.ccn, item.casecategory, item.summary, item.status, item.createdBy
+    ];
+    return fields.some(v => String(v || "").toLowerCase().includes(t));
+  }
+
+  function getSelections(){
+    return {
+      createdAt: document.getElementById('filterCreatedDate')?.value || '',
+      casecategory: document.getElementById('filterCaseCategory')?.value || '',
+      createdBy: document.getElementById('filterCreatedBy')?.value || '',
+      title: document.getElementById('filterTitle')?.value || '',
+      ccn: document.getElementById('filterCCN')?.value || '',
+    };
+  }
+
+  function applyFiltersToItems(items) {
+    const sel = getSelections();
+    return items.filter(it => {
+      if (sel.createdAt && it.createdAt !== sel.createdAt) return false;
+      if (sel.casecategory && norm(it.casecategory) !== norm(sel.casecategory)) return false;
+      if (sel.createdBy && norm(it.createdBy) !== norm(sel.createdBy)) return false;
+      if (sel.title && norm(it.title) !== norm(sel.title)) return false;
+      if (sel.ccn && String(it.ccn) !== String(sel.ccn)) return false;
+      return true;
     });
   }
-  function syncSelect(sel){
-    const wrap = sel.previousElementSibling; if(!wrap?.classList.contains('ui-select')) return;
-    const btn = $('.ui-select__btn',wrap), list = $('.ui-select__list',wrap); list.innerHTML='';
-    Array.from(sel.options).forEach(o => { const d=document.createElement('div'); d.className='ui-option'; d.dataset.value=o.value; d.textContent=o.text; if(o.value===sel.value)d.setAttribute('aria-selected','true'); d.onclick=()=>{ sel.value=o.value; sel.dispatchEvent(new Event('change',{bubbles:true})); syncSelect(sel); wrap.classList.remove('is-open'); }; list.appendChild(d); });
-    btn.textContent = sel.options[sel.selectedIndex]?.text || sel.options[0]?.text || 'Select';
+
+  function createToastContainer() {
+    let t = document.getElementById('toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'toast';
+      t.className = 'toast';
+      document.body.appendChild(t);
+    }
+    return t;
   }
-  function refill(id, values, label=v=>v){ const sel=$('#'+id); if(!sel) return; const first=sel.options[0]?.textContent || 'All'; const prev=sel.value; sel.innerHTML=`<option value="">${esc(first)}</option>`; values.forEach(v=>sel.add(new Option(label(v),v))); sel.value = values.includes(prev) ? prev : ''; syncSelect(sel); }
-  function populateFilters(items=load()){ const vals = key => [...new Set(items.map(i=>i[key]).filter(Boolean))].sort(); refill('filterCreatedDate', vals('createdAt').reverse(), dateLabelFromKey); refill('filterCaseCategory', vals('casecategory')); refill('filterCreatedBy', vals('createdBy')); refill('filterTitle', vals('title')); refill('filterCCN', vals('ccn')); }
-  function selections(){ return {createdAt:$('#filterCreatedDate')?.value||'',casecategory:$('#filterCaseCategory')?.value||'',createdBy:$('#filterCreatedBy')?.value||'',title:$('#filterTitle')?.value||'',ccn:$('#filterCCN')?.value||''}; }
-  function localKeywordMatch(item){ const term=norm(searchBox?.value); if(!term) return true; return [item.title,item.ccn,item.casecategory,item.summary,item.status,item.createdBy].some(v=>norm(v).includes(term)); }
-  function applyFilters(items){ const s=selections(); return items.filter(item => (!s.createdAt||item.createdAt===s.createdAt) && (!s.casecategory||norm(item.casecategory)===norm(s.casecategory)) && (!s.createdBy||norm(item.createdBy)===norm(s.createdBy)) && (!s.title||norm(item.title)===norm(s.title)) && (!s.ccn||String(item.ccn)===String(s.ccn)) && localKeywordMatch(item)); }
-  function runSearch(){ currentPage=1; caches.currentResults=applyFilters(load()); renderCurrentPage(); }
-  function getSortValue(item,key){ const v = key==='createdAt' ? new Date(item.createdAt).getTime() : (item[key]||''); return typeof v==='number'?v:String(v).toLowerCase(); }
-  function sorted(results){ const m=tableSort.dir==='asc'?1:-1; return [...results].sort((a,b)=> String(getSortValue(a,tableSort.key)).localeCompare(String(getSortValue(b,tableSort.key)),undefined,{numeric:true})*m); }
-
-  function renderCurrentPage(){
-    const results=caches.currentResults||[], total=results.length, totalPages=Math.max(1,Math.ceil(total/pageSize)); currentPage=Math.min(currentPage,totalPages); const start=(currentPage-1)*pageSize, end=Math.min(start+pageSize,total), rows=sorted(results).slice(start,end);
-    if(actionsTop) actionsTop.innerHTML = total ? `<div class="results-actions-row"><button type="button" id="exportSelectedBtn" class="btn export-btn" disabled>Export</button><div class="results-pager"><span>Showing ${start+1}-${end} of ${total}</span><div class="pager-controls"><button id="pagerPrev" ${currentPage===1?'disabled':''}>Prev</button><span>Page ${currentPage} / ${totalPages}</span><button id="pagerNext" ${currentPage===totalPages?'disabled':''}>Next</button></div><label>Per page <select id="pagerSize">${[10,25,50,100].map(n=>`<option value="${n}" ${n===pageSize?'selected':''}>${n}</option>`).join('')}</select></label></div></div>` : '0 results';
-    if(actionsBottom) actionsBottom.innerHTML = total ? `<div class="results-pager"><span>Showing ${start+1}-${end} of ${total}</span><div class="pager-controls"><button id="pagerPrev" ${currentPage===1?'disabled':''}>Prev</button><span>Page ${currentPage} / ${totalPages}</span><button id="pagerNext" ${currentPage===totalPages?'disabled':''}>Next</button></div></div>` : '';
-    [actionsTop, actionsBottom].forEach(bar=>{ if(!bar) return; $('#pagerPrev',bar)?.addEventListener('click',()=>{currentPage--;renderCurrentPage();}); $('#pagerNext',bar)?.addEventListener('click',()=>{currentPage++;renderCurrentPage();}); $('#pagerSize',bar)?.addEventListener('change',e=>{pageSize=+e.target.value; currentPage=1; renderCurrentPage();}); $('#exportSelectedBtn',bar)?.addEventListener('click',showExportOverlay); });
-    const tbl=document.createElement('table'); tbl.className='results-table';
-    const heads=[['title','Title'],['ccn','CCN'],['casecategory','Category'],['summary','Summary'],['status','Status'],['createdAt','Created'],['createdBy','By']];
-    tbl.innerHTML = `<thead><tr><th><input type="checkbox" id="selectAllRows"></th>${heads.map(([k,l])=>`<th><button type="button" class="th-sort" data-sort="${k}"><span>${l}</span><span class="th-icon">${tableSort.key===k?(tableSort.dir==='asc'?'▲':'▼'):'↕'}</span></button></th>`).join('')}<th></th></tr></thead><tbody></tbody>`;
-    $$('.th-sort',tbl).forEach(b=>b.onclick=()=>{ const k=b.dataset.sort; tableSort = tableSort.key===k ? {key:k,dir:tableSort.dir==='asc'?'desc':'asc'} : {key:k,dir:k==='createdAt'?'desc':'asc'}; currentPage=1; renderCurrentPage(); });
-    const tb=$('tbody',tbl); if(!rows.length) tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:#555;padding:24px 0;">Start typing, select a filter, or click Search All to view demo results.</td></tr>';
-    rows.forEach(it=>{ const tr=document.createElement('tr'); tr.dataset.id=it.id; tr.onclick=()=>openEntry(it); const cbtd=document.createElement('td'); cbtd.innerHTML=`<input type="checkbox" class="row-select" data-id="${esc(it.id)}">`; $('input',cbtd).onclick=e=>e.stopPropagation(); $('input',cbtd).onchange=updateExportButtonState; tr.appendChild(cbtd); [it.title,it.ccn,it.casecategory,it.summary,it.status,dateLabelFromKey(it.createdAt),it.createdBy].forEach((v,i)=>{ const td=document.createElement('td'); if(i===3)td.className='cell-summary'; if(i===4)td.className='cell-status'; td.innerHTML=(i===3||i===4)?`<div>${esc(v||'—')}</div>`:esc(v||'—'); tr.appendChild(td); }); const td=document.createElement('td'); td.className='col-actions'; td.innerHTML='<button type="button" class="btn row-edit-btn">Edit</button>'; $('button',td).onclick=e=>{e.stopPropagation();openEntry(it);}; tr.appendChild(td); tb.appendChild(tr); });
-    host.innerHTML=''; host.appendChild(tbl); $('#selectAllRows',tbl)?.addEventListener('change',e=>{$$('.row-select',tbl).forEach(cb=>cb.checked=e.target.checked); updateExportButtonState();}); updateExportButtonState();
+  const toastEl = createToastContainer();
+  function toast(msg, type='ok', ms=2500) {
+    toastEl.textContent = msg;
+    toastEl.className = 'toast' + (type==='error' ? ' error' : '') + ' show';
+    setTimeout(()=> {
+      toastEl.className = 'toast' + (type==='error' ? ' error' : '');
+    }, ms);
   }
-  function getSelectedRows(){ return $$('.row-select:checked').map(cb => (caches.currentResults||[]).find(x=>String(x.id)===String(cb.dataset.id))).filter(Boolean); }
-  function updateExportButtonState(){ const disabled=getSelectedRows().length===0; $$('#exportSelectedBtn').forEach(b=>b.disabled=disabled); }
 
-  function parseHistoryField(arr){ return Array.isArray(arr) ? arr : []; }
-  function renderHistoryGroup(group, entries){
-    if(!group) return; const col=group.closest('.history-column'), detail=$('.history-detail',col), body=$('.history-detail__body',col), template=$('.histItem[data-template]',group); $$('.histItem:not([data-template])',group).forEach(n=>n.remove());
-    const list=[...(entries||[])].sort((a,b)=>new Date(b.date||b.ts)-new Date(a.date||a.ts));
-    if(!list.length){ const n=template.cloneNode(true); n.removeAttribute('data-template'); n.style.display=''; n.disabled=true; $('.histPreview',n).textContent='No history yet.'; group.appendChild(n); if(detail)detail.style.display='none'; return; }
-    list.forEach(h=>{ const n=template.cloneNode(true); n.removeAttribute('data-template'); n.style.display=''; const hd=$('.histHeader',n); if(hd) hd.textContent=`Last edit ${dateLabelFromKey(dateKey(h.date||h.ts))} • ${h.editor||h.author||'Demo User'}`; $('.histPreview',n) && ($('.histPreview',n).textContent='View entry'); n.onclick=()=>{ $$('.histItem.is-active',group).forEach(x=>x.classList.remove('is-active')); n.classList.add('is-active'); n.insertAdjacentElement('afterend',detail); detail.style.display=''; body.textContent=h.text||''; }; group.appendChild(n); }); if(detail)detail.style.display='none';
+  function refillSelect($sel, values, {labelize=(v)=>v}={}) {
+    if (!$sel) return;
+    const firstText = $sel.options[0]?.text || "All";
+    $sel.innerHTML = "";
+    const defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = firstText;
+    $sel.appendChild(defaultOpt);
+
+    values.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = labelize(v);
+      $sel.appendChild(opt);
+    });
   }
-  function counter(ta,c,saveBtn){ if(!ta||!c) return; const over=ta.value.length>MAX; c.textContent=`${ta.value.length} / ${MAX} characters${over?' — too long. Max 700':''}`; c.classList.toggle('is-overlimit',over); ta.closest('.edit-wrapper')?.classList.toggle('is-overlimit',over); if(saveBtn) saveBtn.disabled=over; }
-  function insertPrefix(ta,p){ const s=ta.selectionStart??ta.value.length,e=ta.selectionEnd??s,ins=`(${p}) `; ta.value=ta.value.slice(0,s)+ins+ta.value.slice(e); ta.focus(); ta.setSelectionRange(s+ins.length,s+ins.length); ta.dispatchEvent(new Event('input',{bubbles:true})); }
 
-  function renderEntryFromTemplate(item){
-    const tpl=$('#entryTemplate'); const entry=tpl.content.firstElementChild.cloneNode(true); entry.dataset.id=item.id; entry.dataset.dirty='0';
-    $('.entry-title__text',entry).textContent=item.title||'Untitled'; $('.entry-title__info',entry).textContent=`Created ${dateLabelFromKey(item.createdAt)} • ${item.createdBy||'Demo User'}`; $('.entry-meta',entry).textContent=item.ccn||'—';
-    const tSummary=$('.edit-summary',entry), tStatus=$('.edit-status',entry), saveBtn=$('#btn-save',entry); tSummary.spellcheck=false; tStatus.spellcheck=false; tSummary.value=item.summary||''; tStatus.value=item.status||''; entry.dataset.originalSummary=tSummary.value; entry.dataset.originalStatus=tStatus.value;
-    const mark=()=>{entry.dataset.dirty='1'; counter(tSummary,$('.sm-count-summary',entry),saveBtn); counter(tStatus,$('.sm-count-status',entry),saveBtn); runSpellcheck(tSummary); runSpellcheck(tStatus);};
-    tSummary.addEventListener('input',mark); tStatus.addEventListener('input',mark); mark(); entry.dataset.dirty='0';
-    $$('.prefix-bar',entry).forEach(bar=>$$('.prefix-btn',bar).forEach(b=>b.onclick=()=>insertPrefix(bar.closest('[data-edit-section="summary"]')?tSummary:tStatus,b.dataset.prefix)));
-    $$('.edit-wrapper',entry).forEach(w=>{ const box=$('.edit-restore-confirm',w); $('.edit-restore-btn',w).onclick=()=>box.hidden=false; $('.edit-restore-confirm-no',w).onclick=()=>box.hidden=true; $('.edit-restore-confirm-yes',w).onclick=e=>{ if(e.target.dataset.target==='summary')tSummary.value=entry.dataset.originalSummary; if(e.target.dataset.target==='status')tStatus.value=entry.dataset.originalStatus; box.hidden=true; mark(); }; });
-    renderHistoryGroup($('.histGroup[data-group="summary-inline"]',entry),item.summaryHistory); renderHistoryGroup($('.histGroup[data-group="status-inline"]',entry),item.statusHistory);
-    $('#btn-cancel',entry).onclick=closeOverlay; saveBtn.onclick=e=>{e.preventDefault(); saveEdits(entry,item);}; return entry;
+  function populateFilters(items = caches.initialItems) {
+    const $createdDate = document.getElementById('filterCreatedDate');
+    const $casecategory = document.getElementById('filterCaseCategory');
+    const $createdBy = document.getElementById('filterCreatedBy');
+    const $title = document.getElementById('filterTitle');
+    const $ccn = document.getElementById('filterCCN');
+
+    const dates = [...new Set(items.map(i => i.createdAt).filter(Boolean))].sort().reverse();
+    const cats = [...new Set(items.map(i => i.casecategory).filter(Boolean))].sort();
+    const bys = [...new Set(items.map(i => i.createdBy).filter(Boolean))].sort();
+    const titles = [...new Set(items.map(i => i.title).filter(Boolean))].sort();
+    const ccns = [...new Set(items.map(i => String(i.ccn)).filter(Boolean))].sort((a,b)=>Number(a)-Number(b));
+
+    refillSelect($createdDate, dates, { labelize: dateLabelFromKey });
+    refillSelect($casecategory, cats);
+    refillSelect($createdBy, bys);
+    refillSelect($title, titles);
+    refillSelect($ccn, ccns);
   }
-  function openEntry(item){ const overlay=$('#entryOverlay'), slot=$('#entryCardSlot'); if(!overlay||!slot||!item) return; if(CURRENT_OPEN_ID===item.id){closeOverlay();return;} CURRENT_OPEN_ID=item.id; slot.innerHTML=''; overlay.classList.remove('entry-overlay--hidden','entry-overlay--closing'); $('#pageBlocker')?.classList.remove('hidden'); slot.appendChild(renderEntryFromTemplate(item)); }
-  function closeOverlay(){ const overlay=$('#entryOverlay'), slot=$('#entryCardSlot'); overlay.classList.add('entry-overlay--closing'); setTimeout(()=>{overlay.classList.add('entry-overlay--hidden'); overlay.classList.remove('entry-overlay--closing'); slot.innerHTML=''; CURRENT_OPEN_ID=null; $('#pageBlocker')?.classList.add('hidden');},180); }
-  function saveEdits(entry,item){ const sum=$('.edit-summary',entry).value.trim(), stat=$('.edit-status',entry).value.trim(), now=new Date().toISOString(); const oldSummary=(item.summary||'').trim(), oldStatus=(item.status||'').trim(); if(sum===oldSummary && stat===oldStatus){ alert('No changes to save.'); return false; } const updated={...item, modifiedIso:now}; if(sum!==oldSummary){ updated.summaryHistory=[{date:item.summaryUpdated||item.createdIso||now,editor:item.editedBy||item.createdBy||'Demo User',text:item.summary||''},...(item.summaryHistory||[])].filter(x=>x.text); updated.summary=sum; updated.summaryUpdated=now; } if(stat!==oldStatus){ updated.statusHistory=[{date:item.statusUpdated||item.createdIso||now,editor:item.editedBy||item.createdBy||'Demo User',text:item.status||''},...(item.statusHistory||[])].filter(x=>x.text); updated.status=stat; updated.statusUpdated=now; } updateItem(updated); runSearch(); alert('Your changes were saved locally.'); closeOverlay(); return true; }
 
-  function showExportOverlay(){ const selected=getSelectedRows(); if(!selected.length){alert('Please select at least one entry to export.');return;} window.__pendingExport=selected; $('#exportOverlay')?.classList.remove('hidden'); }
-  function initExport(){ const sel=$('#overlayDocClass'); if(sel) sel.innerHTML=['UNCLASSIFIED','CONTROLLED UNCLASSIFIED INFORMATION','CONFIDENTIAL','SECRET'].map((v,i)=>`<option value="${esc(v)}" ${i===0?'selected':''}>${esc(v)}</option>`).join(''); $('#overlayCancel')?.addEventListener('click',e=>{e.preventDefault(); $('#exportOverlay').classList.add('hidden'); window.__pendingExport=null;}); $('#overlayExport')?.addEventListener('click',e=>{e.preventDefault(); const docClass=$('#overlayDocClass')?.value||'UNCLASSIFIED'; const items=(window.__pendingExport||[]).map(x=>({...x,DocClass:docClass})); const html=`<html><head><meta charset="utf-8"><title>NSD Submissions</title><style>body{font-family:Arial,sans-serif;line-height:1.4}.banner{text-align:center;font-weight:bold;color:#bb0000;margin:12px 0}.item{page-break-after:always}h1{font-size:20pt}h2{font-size:14pt}</style></head><body>${items.map(it=>`<div class="item"><div class="banner">${esc(docClass)}</div><h1>${esc(it.title)}</h1><p><b>CCN:</b> ${esc(it.ccn)}<br><b>Category:</b> ${esc(it.casecategory)}<br><b>Created:</b> ${esc(dateLabelFromKey(it.createdAt))}<br><b>By:</b> ${esc(it.createdBy)}</p><h2>Summary</h2><p>${esc(it.summary)}</p><h2>Status</h2><p>${esc(it.status)}</p><div class="banner">${esc(docClass)}</div></div>`).join('')}</body></html>`; const blob=new Blob([html],{type:'application/msword'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='NSD_Submissions_Demo.doc'; a.click(); URL.revokeObjectURL(url); $('#exportOverlay').classList.add('hidden'); window.__pendingExport=null; }); }
+  function showInitialEmptyState() {
+    const host = document.getElementById("resultsTableHost");
+    const actionsBar = document.getElementById("resultsActions");
+    if (actionsBar) actionsBar.textContent = "0 results";
+    host.innerHTML = `
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Title</th><th>CCN</th><th>Category</th><th>Summary</th>
+            <th>Status</th><th>Created</th><th>By</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="8" style="text-align:center;color:#555;padding:24px 0;">
+              Start typing or select a filter to view results.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+  }
 
-  $('#entryOverlay .panel-close')?.addEventListener('click',closeOverlay); $('#entryOverlay')?.addEventListener('click',e=>{if(e.target.id==='entryOverlay')closeOverlay();}); document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#entryOverlay')?.classList.contains('entry-overlay--hidden'))closeOverlay();});
-  function boot(){ caches.initialItems=load(); caches.currentResults=[]; enhanceSelects(); populateFilters(caches.initialItems); $$('#filters select').forEach(s=>{syncSelect(s); s.onchange=runSearch;}); searchBox?.addEventListener('input',runSearch); $('#searchAllBtn')?.addEventListener('click',()=>{ if(searchBox) searchBox.value=''; $$('#filters select').forEach(s=>{s.value=''; syncSelect(s);}); caches.currentResults=load(); currentPage=1; renderCurrentPage(); }); $('#filterClearBtn')?.addEventListener('click',()=>{ $$('#filters select').forEach(s=>{s.value='';syncSelect(s);}); if(searchBox)searchBox.value=''; caches.currentResults=[]; renderCurrentPage(); populateFilters(load()); }); initExport(); renderCurrentPage(); }
+  function getSortValue(item, key) {
+    switch (key) {
+      case "createdAt": return item.createdAt ? new Date(item.createdAt).getTime() : 0;
+      case "title": return (item.title || "").toLowerCase();
+      case "ccn": return (item.ccn || "").toLowerCase();
+      case "casecategory": return (item.casecategory || "").toLowerCase();
+      case "summary": return (item.summary || "").toLowerCase();
+      case "status": return (item.status || "").toLowerCase();
+      case "createdBy": return (item.createdBy || "").toLowerCase();
+      default: return "";
+    }
+  }
+
+  function compareValues(a, b) {
+    if (typeof a === "number" && typeof b === "number") return a - b;
+    return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
+  }
+
+  function getSortedResults(results) {
+    const { key, dir } = tableSort;
+    const mult = dir === "asc" ? 1 : -1;
+    return [...results].sort((x, y) => mult * compareValues(getSortValue(x, key), getSortValue(y, key)));
+  }
+
+  function getSelectedRows() {
+    const selected = [];
+    document.querySelectorAll("input.row-select:checked").forEach(cb => {
+      const id = cb.dataset.id;
+      const item = caches.currentResults.find(x => x.id == id);
+      if (item) selected.push(item);
+    });
+    return selected;
+  }
+
+  function updateExportButtonState() {
+    const btn = document.getElementById("exportSelectedBtn");
+    if (btn) btn.disabled = getSelectedRows().length === 0;
+  }
+
+  function renderResults(list) {
+    caches.currentResults = Array.isArray(list) ? list : [];
+    renderCurrentPage();
+  }
+
+  function renderCurrentPage() {
+    const host = document.getElementById("resultsTableHost");
+    const actionsTop = document.getElementById("resultsActions");
+    const actionsBottom = document.getElementById("resultsActionsBottom");
+    if (!host) return;
+
+    host.innerHTML = "";
+    const results = caches.currentResults || [];
+    const total = results.length;
+
+    if (total === 0) {
+      actionsTop.textContent = "0 results";
+      actionsBottom.textContent = "";
+      host.innerHTML = `
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Title</th><th>CCN</th><th>Category</th><th>Summary</th>
+              <th>Status</th><th>Created</th><th>By</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      `;
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    currentPage = Math.min(currentPage, totalPages);
+
+    const sorted = getSortedResults(results);
+    const start = (currentPage - 1) * pageSize;
+    const end = Math.min(start + pageSize, total);
+    const pageRows = sorted.slice(start, end);
+
+    actionsTop.innerHTML = `
+      <div class="results-actions-row">
+        <button type="button" id="exportSelectedBtn" class="btn export-btn" disabled>Export</button>
+        <div class="results-pager">
+          <span class="results-count">Showing ${start + 1}-${end} of ${total}</span>
+          <div class="pager-controls">
+            <button type="button" id="pagerPrev" ${currentPage === 1 ? "disabled" : ""}>Prev</button>
+            <span class="pager-page">Page ${currentPage} / ${totalPages}</span>
+            <button type="button" id="pagerNext" ${currentPage === totalPages ? "disabled" : ""}>Next</button>
+          </div>
+          <label>
+            Per page
+            <select id="pagerSize">
+              ${[10,25,50,100].map(n => `<option value="${n}" ${n===pageSize?'selected':''}>${n}</option>`).join("")}
+            </select>
+          </label>
+        </div>
+      </div>
+    `;
+
+    actionsBottom.innerHTML = `
+      <div class="results-pager">
+        <span class="results-count">Showing ${start + 1}-${end} of ${total}</span>
+        <div class="pager-controls">
+          <button type="button" id="pagerPrevBottom" ${currentPage === 1 ? "disabled" : ""}>Prev</button>
+          <span class="pager-page">Page ${currentPage} / ${totalPages}</span>
+          <button type="button" id="pagerNextBottom" ${currentPage === totalPages ? "disabled" : ""}>Next</button>
+        </div>
+      </div>
+    `;
+
+    const tbl = document.createElement("table");
+    tbl.className = "results-table";
+    tbl.innerHTML = `
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAllRows"></th>
+          <th><button type="button" class="th-sort" data-sort="title">Title <span class="th-icon"></span></button></th>
+          <th><button type="button" class="th-sort" data-sort="ccn">CCN <span class="th-icon"></span></button></th>
+          <th><button type="button" class="th-sort" data-sort="casecategory">Category <span class="th-icon"></span></button></th>
+          <th><button type="button" class="th-sort" data-sort="summary">Summary <span class="th-icon"></span></button></th>
+          <th><button type="button" class="th-sort" data-sort="status">Status <span class="th-icon"></span></button></th>
+          <th><button type="button" class="th-sort" data-sort="createdAt">Created <span class="th-icon"></span></button></th>
+          <th><button type="button" class="th-sort" data-sort="createdBy">By <span class="th-icon"></span></button></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+
+    tbl.querySelectorAll("button.th-sort").forEach(btn => {
+      const key = btn.dataset.sort;
+      const iconEl = btn.querySelector(".th-icon");
+      iconEl.textContent = tableSort.key === key ? (tableSort.dir === "asc" ? "▲" : "▼") : "↕";
+      btn.addEventListener("click", () => {
+        if (tableSort.key === key) tableSort.dir = tableSort.dir === "asc" ? "desc" : "asc";
+        else {
+          tableSort.key = key;
+          tableSort.dir = key === "createdAt" ? "desc" : "asc";
+        }
+        currentPage = 1;
+        renderCurrentPage();
+      });
+    });
+
+    const tbody = tbl.querySelector("tbody");
+    const td = (text, cls) => {
+      const el = document.createElement("td");
+      if (cls) el.className = cls;
+      el.textContent = text ?? "—";
+      return el;
+    };
+
+    pageRows.forEach(item => {
+      const tr = document.createElement("tr");
+      tr.dataset.id = item.id;
+
+      const selectTd = document.createElement("td");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.className = "row-select";
+      cb.dataset.id = item.id;
+      cb.addEventListener("change", updateExportButtonState);
+      selectTd.appendChild(cb);
+      tr.appendChild(selectTd);
+
+      tr.appendChild(td(item.title));
+      tr.appendChild(td(item.ccn));
+      tr.appendChild(td(item.casecategory));
+      tr.appendChild(td(item.summary, "cell-summary"));
+      tr.appendChild(td(item.status, "cell-status"));
+      tr.appendChild(td(dateLabelFromKey(item.createdAt)));
+      tr.appendChild(td(item.createdBy));
+
+      const actionsTd = document.createElement("td");
+      actionsTd.className = "col-actions";
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "btn row-edit-btn";
+      editBtn.textContent = "Edit";
+      editBtn.addEventListener("click", () => openEntry(item));
+      actionsTd.appendChild(editBtn);
+      tr.appendChild(actionsTd);
+
+      tbody.appendChild(tr);
+    });
+
+    host.appendChild(tbl);
+
+    document.getElementById("selectAllRows")?.addEventListener("change", function () {
+      tbl.querySelectorAll("input.row-select").forEach(cb => cb.checked = this.checked);
+      updateExportButtonState();
+    });
+
+    document.getElementById("pagerPrev")?.addEventListener("click", () => {
+      if (currentPage > 1) { currentPage--; renderCurrentPage(); }
+    });
+    document.getElementById("pagerNext")?.addEventListener("click", () => {
+      if (currentPage < totalPages) { currentPage++; renderCurrentPage(); }
+    });
+    document.getElementById("pagerPrevBottom")?.addEventListener("click", () => {
+      if (currentPage > 1) { currentPage--; renderCurrentPage(); }
+    });
+    document.getElementById("pagerNextBottom")?.addEventListener("click", () => {
+      if (currentPage < totalPages) { currentPage++; renderCurrentPage(); }
+    });
+    document.getElementById("pagerSize")?.addEventListener("change", (e) => {
+      pageSize = Number(e.target.value) || 10;
+      currentPage = 1;
+      renderCurrentPage();
+    });
+
+    document.getElementById("exportSelectedBtn")?.addEventListener("click", () => {
+      const selected = getSelectedRows();
+      if (!selected.length) return alert("Please select at least one entry to export.");
+      window.__pendingExport = selected;
+      document.getElementById("exportOverlay").classList.remove("hidden");
+    });
+
+    updateExportButtonState();
+  }
+
+  function runLocalSearch() {
+    const term = (searchBox?.value || '').trim();
+    let items = [...caches.initialItems];
+    if (term) items = items.filter(it => localKeywordMatch(it, term));
+    items = applyFiltersToItems(items);
+    currentPage = 1;
+    renderResults(items);
+  }
+
+  function renderHistoryGroup(groupEl, entries) {
+    if (!groupEl) return;
+    const historyColumn = groupEl.closest('.history-column');
+    const detailEl = historyColumn?.querySelector('.history-detail');
+    const detailBodyEl = detailEl?.querySelector('.history-detail__body');
+    const template = groupEl.querySelector('.histItem[data-template]');
+
+    groupEl.querySelectorAll('.histItem:not([data-template])').forEach(n => n.remove());
+
+    const normalized = (entries || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+    if (!normalized.length) {
+      const empty = template.cloneNode(true);
+      empty.removeAttribute('data-template');
+      empty.style.display = '';
+      empty.disabled = true;
+      empty.querySelector('.histHeader').textContent = 'No history yet.';
+      groupEl.appendChild(empty);
+      if (detailEl) detailEl.style.display = 'none';
+      return;
+    }
+
+    normalized.forEach(e => {
+      const node = template.cloneNode(true);
+      node.removeAttribute('data-template');
+      node.style.display = '';
+      const dateLabel = dateLabelFromKey(dateKey(e.date));
+      node.querySelector('.histHeader').textContent = `Last edit ${dateLabel} • ${e.editor || 'Unknown'}`;
+      node.addEventListener('click', () => {
+        groupEl.querySelectorAll('.histItem.is-active').forEach(n => n.classList.remove('is-active'));
+        node.classList.add('is-active');
+        if (detailEl && detailBodyEl) {
+          detailEl.style.display = '';
+          detailBodyEl.textContent = e.text || '';
+        }
+      });
+      groupEl.appendChild(node);
+    });
+
+    if (detailEl) detailEl.style.display = 'none';
+  }
+
+  function insertPrefixAtCursor(textarea, prefix) {
+    if (!textarea || !prefix) return;
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? start;
+    const before = textarea.value.slice(0, start);
+    const after = textarea.value.slice(end);
+    const insert = `(${prefix}) `;
+    textarea.value = before + insert + after;
+    const newPos = before.length + insert.length;
+    textarea.focus();
+    textarea.setSelectionRange(newPos, newPos);
+  }
+
+  function renderEntryFromTemplate(item) {
+    const tpl = document.getElementById('entryTemplate');
+    const entry = tpl.content.firstElementChild.cloneNode(true);
+    entry.dataset.id = item.id;
+    entry.dataset.originalSummary = item.summary || '';
+    entry.dataset.originalStatus = item.status || '';
+    entry.dataset.dirty = "0";
+
+    entry.querySelector('.entry-title__text').textContent = item.title || 'Untitled';
+    entry.querySelector('.entry-title__info').textContent = `Created ${dateLabelFromKey(item.createdAt)} • ${item.createdBy}`;
+    entry.querySelector('.entry-meta').textContent = item.ccn || 'Unknown';
+
+    const tSummary = entry.querySelector('.edit-summary');
+    const tStatus = entry.querySelector('.edit-status');
+    tSummary.value = item.summary || '';
+    tStatus.value = item.status || '';
+
+    const markDirty = () => entry.dataset.dirty = "1";
+    tSummary.addEventListener('input', markDirty);
+    tStatus.addEventListener('input', markDirty);
+
+    entry.querySelectorAll('[data-edit-section="summary"] .prefix-btn').forEach(btn => {
+      btn.addEventListener('click', () => insertPrefixAtCursor(tSummary, btn.dataset.prefix));
+    });
+    entry.querySelectorAll('[data-edit-section="status"] .prefix-btn').forEach(btn => {
+      btn.addEventListener('click', () => insertPrefixAtCursor(tStatus, btn.dataset.prefix));
+    });
+
+    renderHistoryGroup(entry.querySelector('.histGroup[data-group="summary-inline"]'), item.summaryHistory);
+    renderHistoryGroup(entry.querySelector('.histGroup[data-group="status-inline"]'), item.statusHistory);
+
+    return entry;
+  }
+
+  function openEntry(listItem) {
+    const overlay = document.getElementById('entryOverlay');
+    const slot = document.getElementById('entryCardSlot');
+    const blocker = document.getElementById('pageBlocker');
+    if (!overlay || !slot) return;
+
+    const item = caches.initialItems.find(x => x.id === listItem.id);
+    if (!item) return;
+
+    CURRENT_OPEN_ID = item.id;
+    slot.innerHTML = '';
+    const entry = renderEntryFromTemplate(item);
+    slot.appendChild(entry);
+
+    overlay.classList.remove('entry-overlay--hidden');
+    blocker.classList.remove('hidden');
+
+    const close = () => {
+      overlay.classList.add('entry-overlay--hidden');
+      blocker.classList.add('hidden');
+      slot.innerHTML = '';
+      CURRENT_OPEN_ID = null;
+    };
+
+    overlay.querySelector('.panel-close').onclick = close;
+    entry.querySelector('#btn-cancel').onclick = close;
+    entry.querySelector('#btn-save').onclick = () => {
+      const newSummary = entry.querySelector('.edit-summary').value.trim();
+      const newStatus = entry.querySelector('.edit-status').value.trim();
+      const changedSummary = newSummary !== (item.summary || '').trim();
+      const changedStatus = newStatus !== (item.status || '').trim();
+
+      if (!changedSummary && !changedStatus) {
+        toast("No changes to save");
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
+
+      if (changedSummary) {
+        if (item.summary) {
+          item.summaryHistory.unshift({
+            text: item.summary,
+            editor: item.editedBy || item.createdBy,
+            date: item.summaryUpdated || item.createdIso
+          });
+        }
+        item.summary = newSummary;
+        item.summaryUpdated = nowIso;
+      }
+
+      if (changedStatus) {
+        if (item.status) {
+          item.statusHistory.unshift({
+            text: item.status,
+            editor: item.editedBy || item.createdBy,
+            date: item.statusUpdated || item.createdIso
+          });
+        }
+        item.status = newStatus;
+        item.statusUpdated = nowIso;
+      }
+
+      item.editedBy = "Demo User";
+      toast("Demo changes saved locally");
+      runLocalSearch();
+      close();
+    };
+  }
+
+  function initDocClassDropdown() {
+    const sel = document.getElementById("overlayDocClass");
+    sel.innerHTML = `<option value="">-- Select Classification --</option>`;
+    DOC_CLASS_CHOICES.forEach(choice => {
+      const opt = document.createElement("option");
+      opt.value = choice;
+      opt.textContent = choice;
+      sel.appendChild(opt);
+    });
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function buildDemoExport(items) {
+    const lines = [];
+    items.forEach((item, i) => {
+      lines.push(`CLASSIFICATION: ${item.DocClass || "UNCLASSIFIED"}`);
+      lines.push(`TITLE: ${item.title || ""}`);
+      lines.push(`CCN: ${item.ccn || ""}`);
+      lines.push(`CATEGORY: ${item.casecategory || ""}`);
+      lines.push(`CREATED: ${item.createdAt || ""}`);
+      lines.push(`BY: ${item.createdBy || ""}`);
+      lines.push("");
+      lines.push("SUMMARY");
+      lines.push(item.summary || "");
+      lines.push("");
+      lines.push("STATUS");
+      lines.push(item.status || "");
+      lines.push("");
+      lines.push(`CLASSIFICATION: ${item.DocClass || "UNCLASSIFIED"}`);
+      if (i < items.length - 1) lines.push("\\n----------------------------------------\\n");
+    });
+    return new Blob([lines.join("\\n")], { type: "text/plain;charset=utf-8" });
+  }
+
+  document.getElementById("overlayCancel").addEventListener("click", () => {
+    document.getElementById("exportOverlay").classList.add("hidden");
+    window.__pendingExport = null;
+  });
+
+  document.getElementById("overlayExport").addEventListener("click", () => {
+    const docClass = document.getElementById("overlayDocClass").value;
+    if (!docClass) return alert("Please select a classification.");
+
+    const items = (window.__pendingExport || []).map(item => ({ ...item, DocClass: docClass }));
+    const blob = buildDemoExport(items);
+    downloadBlob(blob, "NSD_Submissions_DEMO.txt");
+
+    document.getElementById("exportOverlay").classList.add("hidden");
+    window.__pendingExport = null;
+    toast("Demo export downloaded");
+  });
+
+  function wireEvents() {
+    filterClearBtn?.addEventListener('click', () => {
+      document.querySelectorAll('#filters select').forEach(sel => sel.value = '');
+      if (searchBox) searchBox.value = '';
+      currentPage = 1;
+      showInitialEmptyState();
+      populateFilters(caches.initialItems);
+    });
+
+    document.getElementById("searchAllBtn")?.addEventListener("click", () => {
+      searchBox.value = "";
+      document.querySelectorAll('#filters select').forEach(sel => sel.value = '');
+      runLocalSearch();
+    });
+
+    document.querySelectorAll('#filters select').forEach(sel => {
+      sel.addEventListener('change', runLocalSearch);
+    });
+
+    searchBox?.addEventListener('input', runLocalSearch);
+
+    document.getElementById('entryOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'entryOverlay') {
+        document.getElementById('entryOverlay').classList.add('entry-overlay--hidden');
+        document.getElementById('pageBlocker').classList.add('hidden');
+        document.getElementById('entryCardSlot').innerHTML = '';
+      }
+    });
+  }
+
+  function boot() {
+    showInitialEmptyState();
+    populateFilters(caches.initialItems);
+    initDocClassDropdown();
+    wireEvents();
+  }
+
   boot();
 });
