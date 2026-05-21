@@ -3,103 +3,211 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Entry Demo</title>
+  <title>NSD Weekly Demo</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="sidebar__top">
-        <h2>Entries</h2>
-        <button id="btnNewEntry" type="button">+ New</button>
+  <div class="shell">
+    <div class="title-bar">
+      <div class="title-brand">
+        <div class="title-img"></div>
+        <h2>NSD Weekly</h2>
       </div>
 
-      <div id="entriesList" class="entries-list"></div>
-
-      <div class="sidebar__actions">
-        <button id="btnDuplicateEntry" type="button">Duplicate</button>
-        <button id="btnDeleteEntry" type="button">Delete</button>
-        <button id="btnShowAll" type="button" class="is-disabled" disabled>Show All</button>
+      <div class="title-links" aria-label="Section navigation">
+        <a href="#">NSD Weekly Home</a>
+        <a href="#">Search Entries</a>
       </div>
-    </aside>
 
-    <main class="main">
-      <section class="editor-card new-entry">
-        <div class="grid">
-          <div class="field">
-            <label for="fieldoffice">Field Office</label>
-            <select id="fieldoffice">
-              <option value="">Select Field Office</option>
-            </select>
-          </div>
-
-          <div class="field" id="suboffice-field">
-            <label for="suboffice">Sub Office</label>
-            <select id="suboffice">
-              <option value="">Select SubOffice</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="ccn">CCN</label>
-            <input id="ccn" type="text" />
-          </div>
-
-          <div class="field">
-            <label>Title Classification</label>
-            <div class="class-select">
-              <select id="titleClassDropdown"></select>
-              <div class="class-helper">Select classification first</div>
-            </div>
-          </div>
-
-          <div class="field field--full">
-            <label for="title">Title</label>
-            <textarea id="title" rows="2"></textarea>
-          </div>
-
-          <div class="field">
-            <label>Summary Classification</label>
-            <div class="class-select">
-              <select id="summaryClassDropdown"></select>
-              <div class="class-helper">Select classification first</div>
-            </div>
-          </div>
-
-          <div class="field field--full">
-            <label for="summary">Summary</label>
-            <textarea id="summary" rows="5"></textarea>
-          </div>
-
-          <div class="field">
-            <label>Status Classification</label>
-            <div class="class-select">
-              <select id="statusClassDropdown"></select>
-              <div class="class-helper">Select classification first</div>
-            </div>
-          </div>
-
-          <div class="field field--full">
-            <label for="status">Status</label>
-            <textarea id="status" rows="4"></textarea>
+      <div class="browser-actions">
+        <div class="autosave-wrap">
+          <div id="autosave" class="autosave" aria-hidden="true">
+            <div class="dot-check" id="dotCheck">✓</div>
+            <div class="as-text">Saved</div>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <section id="reviewCard" class="review-card">
-        <h3>Review</h3>
-        <div class="review-grid">
-          <div><strong>CCN:</strong> <span id="r-ccn">— not set —</span></div>
-          <div><strong>Title:</strong> <span id="r-title">— not set —</span></div>
-          <div><strong>Field Office:</strong> <span id="r-fieldoffice">— not set —</span></div>
-          <div><strong>Sub Office:</strong> <span id="r-suboffice">— not set —</span></div>
-          <div><strong>Summary:</strong> <span id="r-summary">— not set —</span></div>
-          <div><strong>Status:</strong> <span id="r-status">— not set —</span></div>
+    <main id="weeklySection" class="main-section">
+      <section>
+        <div class="form-panel" role="region" aria-label="Form panel">
+          <div class="entry-toolbar">
+            <button class="btn title-btn" id="btnNewEntry" type="button">+ New entry</button>
+            <button class="btn title-btn" id="btnDuplicateEntry" type="button">Duplicate current entry</button>
+            <button class="btn show-btn is-disabled" id="btnShowAll" type="button" disabled>Show all entries &amp; Submit</button>
+          </div>
+
+          <div class="grid">
+            <aside aria-label="Entries & Review">
+              <div class="entries">
+                <div class="entry-header-wrap">
+                  <h3 class="entry-header">Review &amp; Manage Entries</h3>
+                  <div class="muted">Select an entry to view or edit. Live answers appear.</div>
+                </div>
+
+                <div id="entriesList" class="list" aria-label="Saved entries"></div>
+              </div>
+
+              <div class="review-card hidden" id="reviewCard">
+                <div class="review-row" id="r-row-title">
+                  <div class="review-label">Title</div>
+                  <div class="review-value" id="r-title">— not set —</div>
+                </div>
+
+                <div class="review-row" id="r-row-ccn">
+                  <div class="review-label">CCN</div>
+                  <div class="review-value" id="r-ccn">— not set —</div>
+                </div>
+
+                <div class="review-row" id="r-row-fieldoffice">
+                  <div class="review-label">Field Office</div>
+                  <div class="review-value" id="r-fieldoffice">— not set —</div>
+                </div>
+
+                <div class="review-row" id="r-row-suboffice">
+                  <div class="review-label">RA/RU</div>
+                  <div class="review-value" id="r-suboffice">— not set —</div>
+                </div>
+
+                <div class="review-row" id="r-row-summary">
+                  <div class="review-label">Summary</div>
+                  <div class="review-value" id="r-summary">— not set —</div>
+                </div>
+
+                <div class="review-row" id="r-row-status">
+                  <div class="review-label">Status</div>
+                  <div class="review-value" id="r-status">— not set —</div>
+                </div>
+
+                <div class="review-footer">
+                  <button id="btnDeleteEntry" type="button" class="btn warn-btn">Delete Entry</button>
+                </div>
+              </div>
+            </aside>
+
+            <div class="new-entry">
+              <div class="entry-header-wrap">
+                <h3 class="entry-header">Create &amp; Edit Entries</h3>
+                <div class="muted">
+                  Start by selecting a classification.
+                  <strong><span aria-hidden="true" class="asterisk">*</span>All fields are required.</strong>
+                </div>
+              </div>
+
+              <div class="card" aria-label="Details">
+                <div class="title-grid">
+                  <label for="title">Title<span class="asterisk" aria-hidden="true">*</span></label>
+                  <p class="class-helper">Select a Classification to enable</p>
+
+                  <div class="class-select title-class">
+                    <button type="button" class="ui-class__btn" aria-expanded="false">Select a Classification</button>
+                    <div class="ui-select__list" role="listbox"></div>
+                    <select id="titleClassDropdown" class="hide-class" aria-hidden="true" tabindex="-1">
+                      <option value="" selected></option>
+                    </select>
+                  </div>
+
+                  <input id="title" type="text" class="title-input" />
+                </div>
+
+                <div class="card-grid">
+                  <div class="field">
+                    <label for="ccn">CCN<span class="asterisk" aria-hidden="true">*</span></label>
+                    <input id="ccn" type="text" class="ccn-input" />
+                    <div class="error" id="err-ccn" style="display:none"></div>
+                  </div>
+
+                  <div class="field">
+                    <label for="fieldoffice">Field Office <span class="asterisk" aria-hidden="true">*</span></label>
+
+                    <div class="ui-select">
+                      <button type="button" class="ui-select__btn" aria-expanded="false" data-placeholder="Select Field Office">Select Field Office</button>
+                      <div class="ui-select__list" role="listbox"></div>
+                      <select id="fieldoffice" class="hide-class" aria-hidden="true" tabindex="-1">
+                        <option value="" selected></option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="field is-hidden" id="suboffice-field">
+                    <label for="suboffice">RA/RU<span class="asterisk" aria-hidden="true">*</span></label>
+
+                    <div class="ui-select">
+                      <button type="button" class="ui-select__btn" aria-expanded="false" data-placeholder="Select Sub Office">Select Sub Office</button>
+                      <div class="ui-select__list" role="listbox"></div>
+                      <select id="suboffice" class="hide-class" aria-hidden="true" tabindex="-1">
+                        <option value=""></option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card card-textarea" aria-label="Summary & Status">
+                <div class="field-grid">
+                  <label for="summary">Summary<span class="asterisk" aria-hidden="true">*</span></label>
+                  <p class="class-helper">Select a Classification to enable</p>
+
+                  <div class="class-select textarea-class">
+                    <button type="button" class="ui-class__btn" aria-expanded="false">Select a Classification</button>
+                    <div class="ui-select__list" role="listbox"></div>
+                    <select id="summaryClassDropdown" class="hide-class" aria-hidden="true" tabindex="-1">
+                      <option value="" selected></option>
+                    </select>
+                  </div>
+                </div>
+
+                <textarea id="summary" class="summary" rows="8" spellcheck="true"></textarea>
+
+                <hr class="section-div" />
+
+                <div class="field-grid">
+                  <label for="status">Status<span class="asterisk" aria-hidden="true">*</span></label>
+                  <p class="class-helper">Select a Classification to enable</p>
+
+                  <div class="class-select textarea-class">
+                    <button type="button" class="ui-class__btn" aria-expanded="false">Select a Classification</button>
+                    <div class="ui-select__list" role="listbox"></div>
+                    <select id="statusClassDropdown" class="hide-class" aria-hidden="true" tabindex="-1">
+                      <option value="" selected></option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <textarea id="status" class="status" rows="8" spellcheck="true"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="glassConfirm" class="glass-confirm hidden">
+          <div class="glass-confirm-box" role="dialog" aria-modal="true" aria-labelledby="gcTitle">
+            <button type="button" class="gc-close" id="gcClose" aria-label="Close">×</button>
+
+            <header class="gc-head">
+              <div class="gc-head-left">
+                <h3 id="gcTitle">Review &amp; submit</h3>
+                <p class="confirm-msg">Grouped by RA/RU. Use <kbd>Esc</kbd> to close.</p>
+              </div>
+              <div class="gc-head-right">
+                <span class="gc-chip"><span id="gcCount">0</span> entr<span id="gcCountPlural">y</span></span>
+                <div class="gc-actions">
+                  <button id="confirmCancel" class="btn ghost" type="button">Cancel</button>
+                  <button id="confirmOK" class="btn primary" type="button">Submit</button>
+                </div>
+              </div>
+            </header>
+
+            <div id="glassConfirmList" class="glass-confirm-list"></div>
+          </div>
         </div>
       </section>
     </main>
   </div>
 
-  <script src="app.js" defer></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
