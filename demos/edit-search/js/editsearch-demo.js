@@ -709,7 +709,7 @@ document.getElementById("overlayExport").addEventListener("click", async (e) => 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "NSD_Submissions.docx";
+        a.download = "MY_word.docx";
         a.click();
         URL.revokeObjectURL(url);
 
