@@ -683,18 +683,43 @@ document.addEventListener('DOMContentLoaded', () => {
     window.__pendingExport = null;
   });
 
-  document.getElementById("overlayExport").addEventListener("click", () => {
+document.getElementById("overlayExport").addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const docClass = document.getElementById("overlayDocClass").value;
-    if (!docClass) return alert("Please select a classification.");
 
-    const items = (window.__pendingExport || []).map(item => ({ ...item, DocClass: docClass }));
-    const blob = buildDemoExport(items);
-    downloadBlob(blob, "NSD_Submissions_DEMO.txt");
+    if (!docClass) {
+        alert("Please select a classification.");
+        return;
+    }
 
-    document.getElementById("exportOverlay").classList.add("hidden");
-    window.__pendingExport = null;
-    toast("Demo export downloaded");
-  });
+    if (!window.docx) {
+        alert("The docx library is not loaded.");
+        return;
+    }
+
+    window.__pendingExport.forEach(item => {
+        item.DocClass = docClass;
+    });
+
+    try {
+        const blob = await buildDocxExport(window.__pendingExport);
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "NSD_Submissions.docx";
+        a.click();
+        URL.revokeObjectURL(url);
+
+        document.getElementById("exportOverlay").classList.add("hidden");
+        window.__pendingExport = null;
+    } catch (err) {
+        console.error("DOCX export failed:", err);
+        alert("Export failed. Please try again.");
+    }
+});
 
   function wireEvents() {
     filterClearBtn?.addEventListener('click', () => {
@@ -725,6 +750,140 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  async function buildDocxExport(items) {
+    const {
+        Document,
+        Packer,
+        Paragraph,
+        TextRun,
+        HeadingLevel,
+        AlignmentType,
+        PageBreak
+    } = docx;
+
+    const children = [];
+
+    items.forEach((item, index) => {
+        const classification = item.DocClass || "UNCLASSIFIED";
+        const title = item.title || "(No Title)";
+        const ccn = item.ccn || "";
+        const category = item.casecategory || "";
+        const created = item.createdAt || "";
+        const author = item.createdBy || "";
+        const summary = item.summary || "(No Summary Provided)";
+        const status = item.status || "(No Status Provided)";
+
+        children.push(
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                    new TextRun({
+                        text: classification,
+                        bold: true,
+                        color: "BB0000",
+                        size: 20
+                    })
+                ]
+            }),
+            new Paragraph({}),
+            new Paragraph({
+                heading: HeadingLevel.HEADING_1,
+                children: [
+                    new TextRun({
+                        text: title,
+                        bold: true
+                    })
+                ]
+            }),
+            new Paragraph({
+                children: [
+                    new TextRun({ text: "CCN: ", bold: true }),
+                    new TextRun(String(ccn))
+                ]
+            }),
+            new Paragraph({
+                children: [
+                    new TextRun({ text: "Category: ", bold: true }),
+                    new TextRun(String(category))
+                ]
+            }),
+            new Paragraph({
+                children: [
+                    new TextRun({ text: "Created: ", bold: true }),
+                    new TextRun(String(created))
+                ]
+            }),
+            new Paragraph({
+                children: [
+                    new TextRun({ text: "By: ", bold: true }),
+                    new TextRun(String(author))
+                ]
+            }),
+            new Paragraph({}),
+            new Paragraph({
+                heading: HeadingLevel.HEADING_2,
+                children: [
+                    new TextRun({
+                        text: "Summary",
+                        bold: true
+                    })
+                ]
+            }),
+            ...String(summary).split(/\r?\n/).map(line =>
+                new Paragraph({
+                    children: [new TextRun({ text: line || " " })]
+                })
+            ),
+            new Paragraph({}),
+            new Paragraph({
+                heading: HeadingLevel.HEADING_2,
+                children: [
+                    new TextRun({
+                        text: "Status",
+                        bold: true
+                    })
+                ]
+            }),
+            ...String(status).split(/\r?\n/).map(line =>
+                new Paragraph({
+                    children: [new TextRun({ text: line || " " })]
+                })
+            ),
+            new Paragraph({}),
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                    new TextRun({
+                        text: classification,
+                        bold: true,
+                        color: "BB0000",
+                        size: 20
+                    })
+                ]
+            })
+        );
+
+        if (index < items.length - 1) {
+            children.push(
+                new Paragraph({
+                    children: [new PageBreak()]
+                })
+            );
+        }
+    });
+
+    const doc = new Document({
+        sections: [
+            {
+                properties: {},
+                children
+            }
+        ]
+    });
+
+    return await Packer.toBlob(doc);
+}
 
   function boot() {
     showInitialEmptyState();
