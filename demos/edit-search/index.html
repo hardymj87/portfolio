@@ -147,17 +147,46 @@
         </div>
       </template>
 
-      <div id="exportOverlay" class="export-overlay hidden">
-        <div class="overlay-content">
-          <h2>Export Selected Entries</h2>
-          <label for="overlayDocClass">Document Classification</label>
-          <select id="overlayDocClass"></select>
-          <div class="overlay-actions">
-            <button id="overlayCancel" type="button">Cancel</button>
-            <button id="overlayExport" type="button">Export Demo File</button>
-          </div>
-        </div>
-      </div>
+<div id="exportOverlay" class="export-overlay hidden">
+  <div class="overlay-content">
+    <h2>Export Selected Entries</h2>
+
+    <label for="overlayDocClass">Document Classification</label>
+    <select id="overlayDocClass"></select>
+
+    <label for="overlayFirstHeading">First Heading</label>
+    <select id="overlayFirstHeading">
+      <option value="">-- Select First Heading --</option>
+      <option value="HIGHLIGHT">HIGHLIGHT</option>
+      <option value="PRIORITY MATTERS">PRIORITY MATTERS</option>
+      <option value="OSI INVESTIGATIONS">OSI INVESTIGATIONS</option>
+      <option value="SI INVESTIGATIONS">SI INVESTIGATIONS</option>
+      <option value="OSP INVESTIGATIONS">OSP INVESTIGATIONS</option>
+    </select>
+
+    <label for="overlaySecondHeading">Second Heading</label>
+    <select id="overlaySecondHeading">
+      <option value="">-- Select Second Heading --</option>
+      <option value="ENGAGEMENT HIGHLIGHT">ENGAGEMENT HIGHLIGHT</option>
+      <option value="STAAT">STAAT</option>
+      <option value="ADDITIONAL HIGHLIGHT">ADDITIONAL HIGHLIGHT</option>
+      <option value="METRICS">METRICS</option>
+    </select>
+
+    <label for="overlayCodeHeading">Code Heading</label>
+    <select id="overlayCodeHeading">
+      <option value="">-- Select Code Heading --</option>
+      <option value="CI INVESTIGATIONS">CI INVESTIGATIONS</option>
+      <option value="THREAT ASSESSMENT">THREAT ASSESSMENT</option>
+      <option value="CI SUPPORT">CI SUPPORT</option>
+    </select>
+
+    <div class="overlay-actions">
+      <button id="overlayCancel" type="button">Cancel</button>
+      <button id="overlayExport" type="button">Export DOCX</button>
+    </div>
+  </div>
+</div>
     </section>
   </main>
 </div>
