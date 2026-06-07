@@ -688,9 +688,27 @@ document.getElementById("overlayExport").addEventListener("click", async (e) => 
     e.stopPropagation();
 
     const docClass = document.getElementById("overlayDocClass").value;
+    const firstHeading = document.getElementById("overlayFirstHeading").value;
+    const secondHeading = document.getElementById("overlaySecondHeading").value;
+    const codeHeading = document.getElementById("overlayCodeHeading").value;
 
     if (!docClass) {
         alert("Please select a classification.");
+        return;
+    }
+
+    if (!firstHeading) {
+        alert("Please select a First Heading.");
+        return;
+    }
+
+    if (!secondHeading) {
+        alert("Please select a Second Heading.");
+        return;
+    }
+
+    if (!codeHeading) {
+        alert("Please select a Code Heading.");
         return;
     }
 
@@ -701,6 +719,9 @@ document.getElementById("overlayExport").addEventListener("click", async (e) => 
 
     window.__pendingExport.forEach(item => {
         item.DocClass = docClass;
+        item.firstHeading = firstHeading;
+        item.secondHeading = secondHeading;
+        item.codeHeading = codeHeading;
     });
 
     try {
@@ -709,7 +730,7 @@ document.getElementById("overlayExport").addEventListener("click", async (e) => 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "MY_word.docx";
+        a.download = "NSD_Submissions.docx";
         a.click();
         URL.revokeObjectURL(url);
 
