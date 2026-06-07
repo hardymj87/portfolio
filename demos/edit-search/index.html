@@ -154,32 +154,29 @@
     <label for="overlayDocClass">Document Classification</label>
     <select id="overlayDocClass"></select>
 
-    <label for="overlayFirstHeading">First Heading</label>
-    <select id="overlayFirstHeading">
-      <option value="">-- Select First Heading --</option>
-      <option value="HIGHLIGHT">HIGHLIGHT</option>
-      <option value="PRIORITY MATTERS">PRIORITY MATTERS</option>
-      <option value="OSI INVESTIGATIONS">OSI INVESTIGATIONS</option>
-      <option value="SI INVESTIGATIONS">SI INVESTIGATIONS</option>
-      <option value="OSP INVESTIGATIONS">OSP INVESTIGATIONS</option>
-    </select>
+    <div class="overlay-group">
+      <div class="overlay-group-title">First Heading</div>
+      <label><input type="checkbox" name="overlayFirstHeading" value="HIGHLIGHT"> HIGHLIGHT</label>
+      <label><input type="checkbox" name="overlayFirstHeading" value="PRIORITY MATTERS"> PRIORITY MATTERS</label>
+      <label><input type="checkbox" name="overlayFirstHeading" value="OSI INVESTIGATIONS"> OSI INVESTIGATIONS</label>
+      <label><input type="checkbox" name="overlayFirstHeading" value="SI INVESTIGATIONS"> SI INVESTIGATIONS</label>
+      <label><input type="checkbox" name="overlayFirstHeading" value="OSP INVESTIGATIONS"> OSP INVESTIGATIONS</label>
+    </div>
 
-    <label for="overlaySecondHeading">Second Heading</label>
-    <select id="overlaySecondHeading">
-      <option value="">-- Select Second Heading --</option>
-      <option value="ENGAGEMENT HIGHLIGHT">ENGAGEMENT HIGHLIGHT</option>
-      <option value="STAAT">STAAT</option>
-      <option value="ADDITIONAL HIGHLIGHT">ADDITIONAL HIGHLIGHT</option>
-      <option value="METRICS">METRICS</option>
-    </select>
+    <div class="overlay-group">
+      <div class="overlay-group-title">Second Heading</div>
+      <label><input type="checkbox" name="overlaySecondHeading" value="ENGAGEMENT HIGHLIGHT"> ENGAGEMENT HIGHLIGHT</label>
+      <label><input type="checkbox" name="overlaySecondHeading" value="STAAT"> STAAT</label>
+      <label><input type="checkbox" name="overlaySecondHeading" value="ADDITIONAL HIGHLIGHT"> ADDITIONAL HIGHLIGHT</label>
+      <label><input type="checkbox" name="overlaySecondHeading" value="METRICS"> METRICS</label>
+    </div>
 
-    <label for="overlayCodeHeading">Code Heading</label>
-    <select id="overlayCodeHeading">
-      <option value="">-- Select Code Heading --</option>
-      <option value="CI INVESTIGATIONS">CI INVESTIGATIONS</option>
-      <option value="THREAT ASSESSMENT">THREAT ASSESSMENT</option>
-      <option value="CI SUPPORT">CI SUPPORT</option>
-    </select>
+    <div class="overlay-group">
+      <div class="overlay-group-title">Code Heading</div>
+      <label><input type="checkbox" name="overlayCodeHeading" value="CI INVESTIGATIONS"> CI INVESTIGATIONS</label>
+      <label><input type="checkbox" name="overlayCodeHeading" value="THREAT ASSESSMENT"> THREAT ASSESSMENT</label>
+      <label><input type="checkbox" name="overlayCodeHeading" value="CI SUPPORT"> CI SUPPORT</label>
+    </div>
 
     <div class="overlay-actions">
       <button id="overlayCancel" type="button">Cancel</button>
